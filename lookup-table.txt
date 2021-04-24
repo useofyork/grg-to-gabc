@@ -1,8 +1,58 @@
+0   x
 1   s   ;
 2   s   ,
 3   s   ::
-12  n   ji
-19  n   ef
-20  n   hj
-24  n   i
+4   s   :
+5   x
+8   n   bvA
+9   n   cvBA
+10  n   dvCBA
+11  n   evDCBA
+12  n   ba
+13  n   ca
+14  n   da
+15  n   ea
+19  n   ab
+20  n   ac
+21  n   ad
+22  n   ae
+24  n   a
+25  n   aw
+29  n   aba
+30  n   bca
+31  n   cda
+32  n   dea
+33  n   acb
+34  n   aca
+35  n   bda
+37  n   adc
+38  n   adb
+39  n   ada
+41  n   aed
+44  n   aea
+45  n   av
+46  n   ae~
+51  n   A
+60  n   bab
+61  n   bab
+63  n   dab
+64  n   cab
+65  n   cac
+67  n   cab
+68  n   bab
+69  n   bab
+70  n   a~
+82  x
+100 n   ab~
+101 n   ba~
+103 n   ad~
+112 n   ba~
+113 n   ca~
+130 x
+160 x
 161 x
+202 x
+203 n   a
+211 x
+212 x
+213 x

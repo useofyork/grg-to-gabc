@@ -1,5 +1,6 @@
 from os import listdir, mkdir
 import io
+import re
 
 def bytes_from_file(filename, chunksize=8192):
     with open(filename, "rb") as f:
@@ -30,10 +31,15 @@ with open("lookup-table.txt", "r") as myfile:
 def process_file(input_filename):
     raw = []
     for b in bytes_from_file("input/" + input_filename):
-        raw += [ord(b)]
+        # Python 3 change
+        # OLD: raw += [ord(b)]
+        # TypeError: ord() expected string of length 1, but int found 
+        # NEW:
+        raw += [b]
 
     stringified = "-".join([str(r) for r in raw[41:]])
-    items = stringified.split("-0-94-222-78-0-255-")
+    # split raw byte data into elements at any of these six-byte markers
+    items = re.split("-0-94-222-78-0-255-|-1-94-222-78-0-255-|-2-94-222-78-0-255-|-3-94-222-78-0-255-|-4-94-222-78-0-255-", stringified)
 
     drop_cap = ""
     outputs = []
@@ -43,10 +49,13 @@ def process_file(input_filename):
 
         lookup_code = item_bytes[3]
 
-        offset = item_bytes[5] / 6
-
+        # Python 3
+        # integer division stops a TypeError later
+        offset = item_bytes[5] // 6
+        
         if lookup_code == 105 or lookup_code == 200:
             try:
+                
                 annotation_a = ""
                 annotation_a_index = 32
                 while item_bytes[annotation_a_index] != 0:
@@ -66,9 +75,10 @@ def process_file(input_filename):
 
                 if annotation_a != "" or annotation_b != "" or drop_cap != "":
                     outputs += [{"annotation_a": annotation_a, "annotation_b": annotation_b, "objects": []}]
-
+                
                 lookup_code = item_bytes[120]
-                offset = item_bytes[122] / 6
+                # integer division
+                offset = item_bytes[122] // 6
             except:
                 continue # Not marking a new file
 
@@ -86,20 +96,15 @@ def process_file(input_filename):
             drop_cap = ""
         text_index = 13
         while item_bytes[text_index] != 0:
-            if item_bytes[text_index] == 225:
-                text += u"\u00E1"
-            elif item_bytes[text_index] == 233:
-                text += u"\u00E9"
-            elif item_bytes[text_index] == 243:
-                text += u"\u00F3"
-            elif item_bytes[text_index] == 250:
-                text += u"\u00FA"
-            else:
+            # the diacritic code doesn't seem necessary...
+            # but don't copy hyphen (Gregorio does it), or dagger, dbldagger since they err
+            if item_bytes[text_index] not in [45, 134, 135]:
                 text += chr(item_bytes[text_index])
             text_index += 1
 
         meta = None
         special = False
+
         if lookup_code in lookup_notes:
             offset_min = 12
             for char in lookup_notes[lookup_code]:
@@ -113,12 +118,17 @@ def process_file(input_filename):
             for char in lookup_notes[lookup_code]:
                 offset_lc = offsets_lc.find(char)
                 offset_uc = offsets_uc.find(char)
-                if offset_lc >= 0:
+                if offset_lc >= 0 and offset <= offset_min:
+                    # Python 3
+                    # previous integer divisions for offset stops a TypeError here
                     meta += offsets_lc[offset_lc - offset_min + offset]
-                elif offset_uc >= 0:
+                elif offset_uc >= 0 and offset <= offset_min:
+                    # Python 3
+                    # ditto
                     meta += offsets_uc[offset_uc - offset_min + offset]
                 else:
                     meta += char
+
         if lookup_code in lookup_specials:
             meta = lookup_specials[lookup_code]
             special = True
@@ -127,7 +137,9 @@ def process_file(input_filename):
             continue
 
         if meta == None:
-            print " - Needs lookup for code " + str(lookup_code)
+            # Python 3
+            # print needs ()
+            print(" - Needs lookup for code " + str(lookup_code))
             meta = "<<<LOOKUP " + str(lookup_code) + ">>>"
 
         obj = {"text": text.strip(), "meta": meta, "space": text[-1] == " " if len(text) > 0 else False, "special": special}
@@ -135,14 +147,16 @@ def process_file(input_filename):
         outputs[-1]["objects"] += [obj]
 
     for output_index, output in enumerate(outputs):
-        result = "annotation: " + output["annotation_a"] + "\nannotation: " + output["annotation_b"] + "\n%%\n"
+        # added semicolon to end the header lines
+        result = "annotation: " + output["annotation_a"] + ";" + "\nannotation: " + output["annotation_b"] + ";" + "\n%%\n"
 
         acc_spaces = 0
         acc_meta = []
         for obj in output["objects"]:
             if len(obj["text"]) > 0:
                 if len(acc_meta) > 0:
-                    result += "(" + "!".join(acc_meta) + ")"
+                    # put an inter neume spacer here if desired, "/", "!", etc.
+                    result += "(" + "".join(acc_meta) + ")"
                     acc_meta = []
                 if acc_spaces > 0:
                     result += acc_spaces * " "
@@ -151,9 +165,10 @@ def process_file(input_filename):
 
             if obj["special"]:
                 if len(acc_meta) > 0:
-                    result += "(" + "!".join(acc_meta) + ")"
+                    result += "(" + "".join(acc_meta) + ")"
                     acc_meta = []
-                result += " (" + obj["meta"] + ")"
+                # added a newline after all specials
+                result += " (" + obj["meta"] + ")\n"
             else:
                 acc_meta += [obj["meta"]]
 
@@ -166,7 +181,9 @@ def process_file(input_filename):
 
         with io.open(output_filename, "w", encoding="utf-8") as output_file:
             output_file.write(result.replace("\n ", "\n"))
-            print " - Wrote " + output_filename
+            # Python 3
+            # print needs ()
+            print(" - Wrote " + output_filename)
 
 if __name__ == "__main__":
     input_filenames = listdir("input")
@@ -179,5 +196,7 @@ if __name__ == "__main__":
     for input_filename in input_filenames:
         if input_filename in [".DS_Store"]:
             continue
-        print "Processing " + input_filename
+        # Python 3
+        # print needs ()s
+        print("Processing " + input_filename)
         process_file(input_filename)
